@@ -20,6 +20,8 @@ const GYRO_SCALE_FACTOR: f64 = 916.7324722093172; // (180/Ï€) / 0.0625 (rad/s â†
 
 pub struct AccelGyro3dImu {
     driver: Driver,
+    accel_scale: f64,
+    gyro_scale: f64,
 }
 
 impl AccelGyro3dImu {
@@ -47,12 +49,18 @@ impl AccelGyro3dImu {
         };
 
         let sample_rate = config.as_ref().and_then(|c| c.sample_rate);
+        let accel_scale = config.as_ref().and_then(|c| c.accel_scale).unwrap_or(1.0);
+        let gyro_scale = config.as_ref().and_then(|c| c.gyro_scale).unwrap_or(1.0);
 
         let id = device_info.sysname();
         let name = device_info.name();
         let driver = Driver::new(id, name, mount_matrix, sample_rate)?;
 
-        Ok(Self { driver })
+        Ok(Self {
+            driver,
+            accel_scale,
+            gyro_scale,
+        })
     }
 }
 
@@ -60,7 +68,7 @@ impl SourceInputDevice for AccelGyro3dImu {
     /// Poll the given input device for input events
     fn poll(&mut self) -> Result<Vec<NativeEvent>, InputError> {
         let events = self.driver.poll()?;
-        let native_events = translate_events(events);
+        let native_events = translate_events(events, self.accel_scale, self.gyro_scale);
         Ok(native_events)
     }
 
@@ -99,28 +107,39 @@ impl Debug for AccelGyro3dImu {
 unsafe impl Send for AccelGyro3dImu {}
 
 /// Translate the given driver events into native events
-fn translate_events(events: Vec<iio_imu::event::Event>) -> Vec<NativeEvent> {
-    events.into_iter().map(translate_event).collect()
+fn translate_events(
+    events: Vec<iio_imu::event::Event>,
+    accel_scale: f64,
+    gyro_scale: f64,
+) -> Vec<NativeEvent> {
+    events
+        .into_iter()
+        .map(|event| translate_event(event, accel_scale, gyro_scale))
+        .collect()
 }
 
 /// Translate the given driver event into a native event
-fn translate_event(event: iio_imu::event::Event) -> NativeEvent {
+fn translate_event(
+    event: iio_imu::event::Event,
+    accel_scale: f64,
+    gyro_scale: f64,
+) -> NativeEvent {
     match event {
         iio_imu::event::Event::Accelerometer(data) => {
             let cap = Capability::Accelerometer(Source::Center);
             let value = InputValue::Vector3 {
-                x: Some(data.roll * ACCEL_SCALE_FACTOR),
-                y: Some(data.pitch * ACCEL_SCALE_FACTOR),
-                z: Some(data.yaw * ACCEL_SCALE_FACTOR),
+                x: Some(data.roll * ACCEL_SCALE_FACTOR * accel_scale),
+                y: Some(data.pitch * ACCEL_SCALE_FACTOR * accel_scale),
+                z: Some(data.yaw * ACCEL_SCALE_FACTOR * accel_scale),
             };
             NativeEvent::new(cap, value)
         }
         iio_imu::event::Event::Gyro(data) => {
             let cap = Capability::Gyroscope(Source::Center);
             let value = InputValue::Vector3 {
-                x: Some(data.roll * GYRO_SCALE_FACTOR),
-                y: Some(data.pitch * GYRO_SCALE_FACTOR),
-                z: Some(data.yaw * GYRO_SCALE_FACTOR),
+                x: Some(data.roll * GYRO_SCALE_FACTOR * gyro_scale),
+                y: Some(data.pitch * GYRO_SCALE_FACTOR * gyro_scale),
+                z: Some(data.yaw * GYRO_SCALE_FACTOR * gyro_scale),
             };
             NativeEvent::new(cap, value)
         }

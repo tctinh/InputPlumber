@@ -156,14 +156,33 @@ source_devices:
       product_id: 0x61ee
       interface_num: 2
 
-  # IMU
+  # Accelerometer
   - group: imu
     iio:
-      name: gyro_3d
+      name: accel_3d
+      # Compensate for the reduced precision of the Legion Go's AMD sensor hub.
+      accel_scale: 10.0
       mount_matrix:
         x: [0, 1, 0]
         y: [1, 0, 0]
         z: [0, 0, 1]
+    events:
+      exclude:
+        - "Accelerometer:Center"
+
+  # Gyroscope
+  - group: imu
+    iio:
+      name: gyro_3d
+      # Compensate for the reduced precision of the Legion Go's AMD sensor hub.
+      gyro_scale: 93.75
+      mount_matrix:
+        x: [0, 1, 0]
+        y: [1, 0, 0]
+        z: [0, 0, 1]
+    events:
+      exclude:
+        - "Gyroscope:Center"
 
 # Optional configuration for the composite device
 options:

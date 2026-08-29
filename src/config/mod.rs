@@ -397,6 +397,12 @@ pub struct IIO {
     /// Desired sampling rate in Hz.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sample_rate: Option<f64>,
+    /// Multiplier applied to accelerometer values after conversion from IIO units.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accel_scale: Option<f64>,
+    /// Multiplier applied to gyroscope values after conversion from IIO units.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gyro_scale: Option<f64>,
     #[deprecated(
         since = "0.43.0",
         note = "please use `<SourceDevice>.config.imu.mount_matrix` instead"

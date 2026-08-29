@@ -1,9 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs::File,
-    io::{self, BufRead, BufReader},
-};
+use std::{collections::{HashMap, HashSet}, error::Error};
 
 use industrial_io::{Channel, ChannelType, Device, Direction};
 
@@ -126,23 +121,7 @@ impl Driver {
     pub fn get_default_event_filter(
         &self,
     ) -> Result<HashSet<Capability>, Box<dyn Error + Send + Sync>> {
-        let filtered_events = match is_driver_loaded("hid_lenovo_go") {
-            Ok(true) => {
-                log::debug!("Found hid-lenovo-go driver. Disabling internal gyroscope.");
-                HashSet::from([
-                    Capability::Accelerometer(Source::Center),
-                    Capability::Gyroscope(Source::Center),
-                ])
-            }
-            Ok(false) => {
-                log::debug!("Did not find hid-lenovo-go driver. Enabling internal gyroscope.");
-                HashSet::new()
-            }
-            Err(e) => {
-                return Err(format!("Failed to read '/proc/modules': {e:?}").into());
-            }
-        };
-        Ok(filtered_events)
+        Ok(HashSet::new())
     }
 
     /// Poll the device for data
@@ -352,19 +331,6 @@ fn get_channels_with_type(
         });
 
     (channels, channel_info)
-}
-
-fn is_driver_loaded(driver_name: &str) -> io::Result<bool> {
-    let file = File::open("/proc/modules")?;
-    let reader = BufReader::new(file);
-
-    for line in reader.lines() {
-        let line = line?;
-        if line.starts_with(driver_name) {
-            return Ok(true);
-        }
-    }
-    Ok(false)
 }
 
 /// Try to set a specific or default sampling rate. Returns Err if the

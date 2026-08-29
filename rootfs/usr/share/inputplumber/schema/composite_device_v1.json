@@ -414,6 +414,18 @@
         "name": {
           "type": "string"
         },
+        "sample_rate": {
+          "description": "Desired sampling rate in Hz.",
+          "type": "number"
+        },
+        "accel_scale": {
+          "description": "Multiplier applied to accelerometer values after conversion from IIO units.",
+          "type": "number"
+        },
+        "gyro_scale": {
+          "description": "Multiplier applied to gyroscope values after conversion from IIO units.",
+          "type": "number"
+        },
         "mount_matrix": {
           "$ref": "#/definitions/MountMatrix"
         }
