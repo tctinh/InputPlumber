@@ -1792,6 +1792,38 @@ impl CompositeDevice {
                 }
                 self.capabilities.insert(cap.clone());
             }
+            // Gyro and accel events are temporarily converted to legacy gamepad capabilities
+            // before being sent to targets, so report the capabilities targets actually receive.
+            if self
+                .capabilities
+                .iter()
+                .any(|cap| matches!(cap, Capability::Accelerometer(_)))
+            {
+                self.capabilities
+                    .retain(|cap| !matches!(cap, Capability::Accelerometer(_)));
+                if !self
+                    .capabilities
+                    .contains(&Capability::Gamepad(Gamepad::Accelerometer))
+                {
+                    self.capabilities
+                        .insert(Capability::Gamepad(Gamepad::Accelerometer));
+                }
+            }
+            if self
+                .capabilities
+                .iter()
+                .any(|cap| matches!(cap, Capability::Gyroscope(_)))
+            {
+                self.capabilities
+                    .retain(|cap| !matches!(cap, Capability::Gyroscope(_)));
+                if !self
+                    .capabilities
+                    .contains(&Capability::Gamepad(Gamepad::Gyro))
+                {
+                    self.capabilities.insert(Capability::Gamepad(Gamepad::Gyro));
+                }
+            }
+
             self.capabilities_by_source.insert(id.clone(), capabilities);
 
             // Get the output capabilities of the source device and keep track
